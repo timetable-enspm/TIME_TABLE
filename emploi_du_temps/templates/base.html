@@ -33,7 +33,7 @@
 html{scroll-behavior:smooth}
 body{
   font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
-  background:var(--gray-100);color:var(--gray-900);
+  background:var(--gray-50);color:var(--gray-900);
   min-height:100vh;display:flex;flex-direction:column;
   -webkit-font-smoothing:antialiased;font-size:14px;overflow-x:hidden;
 }
@@ -570,7 +570,6 @@ tbody td{padding:13px 18px;color:var(--gray-700);vertical-align:middle}
 }
 @media(max-width:640px){
   .navbar{height:auto;min-height:56px;padding:8px 12px;gap:10px}
-  .user-pill{padding:0}
   .brand-badge,.user-pill>div:not(.avatar){display:none}
   .navbar-right{gap:8px}
   .btn-logout{width:36px;height:36px;justify-content:center;padding:0;border-radius:50%}
@@ -862,6 +861,11 @@ document.addEventListener('DOMContentLoaded', function () {
       if (value !== null) {
         if (field.type === 'checkbox') {
           field.checked = value === '1' || value === 'true' || value === 'True';
+        } else if (field.multiple) {
+          const values = value.split(',').map(item => item.trim()).filter(Boolean);
+          Array.from(field.options).forEach(option => {
+            option.selected = values.includes(option.value);
+          });
         } else {
           field.value = value;
         }
