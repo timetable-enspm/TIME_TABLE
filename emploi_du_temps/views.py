@@ -195,7 +195,10 @@ def grille_edt(request: HttpRequest, semaine: str | None = None) -> HttpResponse
                 return HttpResponseForbidden("Aucun emploi du temps publié pour cette semaine.")
             if not creneaux_visibles_semaine(semaine_date, request.user, filtres=filtres).exists():
                 return HttpResponseForbidden("Aucun créneau publié ne correspond aux filtres sélectionnés.")
-        export = generer_pdf_emplois_du_temps(semaine_date, utilisateur=request.user, filtres=filtres)
+        filtres_export = dict(filtres)
+        if est_cd:
+            filtres_export.pop("salle_id", None)
+        export = generer_pdf_emplois_du_temps(semaine_date, utilisateur=request.user, filtres=filtres_export)
         response = HttpResponse(export.contenu, content_type="application/pdf")
         response["Content-Disposition"] = f'attachment; filename="{export.nom_fichier}"'
         return response

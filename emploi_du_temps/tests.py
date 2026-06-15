@@ -1,10 +1,11 @@
 from datetime import date, time
+from unittest.mock import patch
 
 from django.test import TestCase
 from django.urls import reverse
 
 from .models import Cours, Creneau, EmploiDuTemps, Option, Salle, UE, Utilisateur
-from .pdf_export import generer_pdf_emplois_du_temps
+from .pdf_export import ExportPlanning, generer_pdf_emplois_du_temps, nom_fichier_pdf_officiel
 
 
 PASSWORD = "temporary_password_for_tests_2026!"
@@ -120,9 +121,14 @@ class AuthEtExportTests(TestCase):
     def test_generateur_pdf_global_retourne_un_document_pdf(self):
         export = generer_pdf_emplois_du_temps(self.semaine)
 
-        self.assertEqual(export.nom_fichier, "emplois-du-temps-2026-06-01.pdf")
+        self.assertEqual(export.nom_fichier, "TIME_TABLE_ENSPM_INFOTEL_DU_01_AU_06_JUIN_2026.pdf")
         self.assertTrue(export.contenu.startswith(b"%PDF-"))
         self.assertTrue(export.contenu.rstrip().endswith(b"%%EOF"))
+
+    def test_nom_fichier_pdf_suit_format_officiel(self):
+        nom_fichier = nom_fichier_pdf_officiel(date(2026, 6, 8))
+
+        self.assertEqual(nom_fichier, "TIME_TABLE_ENSPM_INFOTEL_DU_08_AU_13_JUIN_2026.pdf")
 
     def test_vue_export_pdf_cd_retourne_piece_jointe(self):
         self.client.force_login(self.cd)
@@ -136,6 +142,21 @@ class AuthEtExportTests(TestCase):
         self.assertEqual(response["Content-Type"], "application/pdf")
         self.assertIn("attachment", response["Content-Disposition"])
         self.assertTrue(response.content.startswith(b"%PDF-"))
+
+    def test_vue_export_pdf_cd_ignore_filtre_salle(self):
+        self.client.force_login(self.cd)
+
+        with patch(
+            "emploi_du_temps.views.generer_pdf_emplois_du_temps",
+            return_value=ExportPlanning(contenu=b"%PDF-test\n%%EOF", nom_fichier="test.pdf"),
+        ) as generer_pdf:
+            response = self.client.get(
+                reverse("grille_edt_semaine", args=[self.semaine.isoformat()]),
+                {"export": "pdf", "salle_id": str(self.salle.pk)},
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn("salle_id", generer_pdf.call_args.kwargs["filtres"])
 
     def test_vue_export_pdf_enseignant_retourne_piece_jointe(self):
         self.client.force_login(self.enseignant)
