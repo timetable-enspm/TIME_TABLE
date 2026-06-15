@@ -1,10 +1,11 @@
 from datetime import date, time
+from unittest.mock import patch
 
 from django.test import TestCase
 from django.urls import reverse
 
 from .models import Cours, Creneau, EmploiDuTemps, Option, Salle, UE, Utilisateur
-from .pdf_export import generer_pdf_emplois_du_temps
+from .pdf_export import ExportPlanning, generer_pdf_emplois_du_temps
 
 
 PASSWORD = "temporary_password_for_tests_2026!"
@@ -136,6 +137,21 @@ class AuthEtExportTests(TestCase):
         self.assertEqual(response["Content-Type"], "application/pdf")
         self.assertIn("attachment", response["Content-Disposition"])
         self.assertTrue(response.content.startswith(b"%PDF-"))
+
+    def test_vue_export_pdf_cd_ignore_filtre_salle(self):
+        self.client.force_login(self.cd)
+
+        with patch(
+            "emploi_du_temps.views.generer_pdf_emplois_du_temps",
+            return_value=ExportPlanning(contenu=b"%PDF-test\n%%EOF", nom_fichier="test.pdf"),
+        ) as generer_pdf:
+            response = self.client.get(
+                reverse("grille_edt_semaine", args=[self.semaine.isoformat()]),
+                {"export": "pdf", "salle_id": str(self.salle.pk)},
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn("salle_id", generer_pdf.call_args.kwargs["filtres"])
 
     def test_vue_export_pdf_enseignant_retourne_piece_jointe(self):
         self.client.force_login(self.enseignant)

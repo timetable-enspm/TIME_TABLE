@@ -57,7 +57,7 @@
     {% endif %}
 
     <a href="{{ export_url }}" class="btn btn-secondary">
-      <i class="ti ti-file-type-pdf"></i> Télécharger le PDF
+      <i class="ti ti-file-type-pdf"></i> {% if est_cd %}Exporter le PDF{% else %}Télécharger{% endif %}
     </a>
   </div>
 </div>
