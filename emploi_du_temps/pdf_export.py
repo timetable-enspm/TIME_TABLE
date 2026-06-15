@@ -6,17 +6,32 @@ from datetime import date, timedelta
 
 from django.conf import settings
 from django.template.loader import render_to_string
-from django.utils.text import slugify
 from weasyprint import HTML
 
 from .grille import JOURS_EDT, construire_grille_semaine, creneaux_visibles_semaine
 from .models import Salle
 
 
+MOIS_FICHIER = [
+    "",
+    "JANVIER", "FEVRIER", "MARS", "AVRIL", "MAI", "JUIN",
+    "JUILLET", "AOUT", "SEPTEMBRE", "OCTOBRE", "NOVEMBRE", "DECEMBRE",
+]
+
+
 @dataclass(frozen=True)
 class ExportPlanning:
     contenu: bytes
     nom_fichier: str
+
+
+def nom_fichier_pdf_officiel(semaine: date) -> str:
+    fin_semaine = semaine + timedelta(days=5)
+    return (
+        "TIME_TABLE_ENSPM_INFOTEL_"
+        f"DU_{semaine.day:02d}_AU_{fin_semaine.day:02d}_"
+        f"{MOIS_FICHIER[fin_semaine.month]}_{fin_semaine.year}.pdf"
+    )
 
 
 def generer_pdf_emplois_du_temps(semaine: date, utilisateur=None, filtres: dict | None = None) -> ExportPlanning:
@@ -78,5 +93,4 @@ def generer_pdf_emplois_du_temps(semaine: date, utilisateur=None, filtres: dict 
     )
 
     contenu = HTML(string=html_str).write_pdf()
-    slug = slugify(f"emplois-du-temps-{semaine.isoformat()}")
-    return ExportPlanning(contenu=contenu, nom_fichier=f"{slug}.pdf")
+    return ExportPlanning(contenu=contenu, nom_fichier=nom_fichier_pdf_officiel(semaine))

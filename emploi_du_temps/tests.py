@@ -5,7 +5,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from .models import Cours, Creneau, EmploiDuTemps, Option, Salle, UE, Utilisateur
-from .pdf_export import ExportPlanning, generer_pdf_emplois_du_temps
+from .pdf_export import ExportPlanning, generer_pdf_emplois_du_temps, nom_fichier_pdf_officiel
 
 
 PASSWORD = "temporary_password_for_tests_2026!"
@@ -121,9 +121,14 @@ class AuthEtExportTests(TestCase):
     def test_generateur_pdf_global_retourne_un_document_pdf(self):
         export = generer_pdf_emplois_du_temps(self.semaine)
 
-        self.assertEqual(export.nom_fichier, "emplois-du-temps-2026-06-01.pdf")
+        self.assertEqual(export.nom_fichier, "TIME_TABLE_ENSPM_INFOTEL_DU_01_AU_06_JUIN_2026.pdf")
         self.assertTrue(export.contenu.startswith(b"%PDF-"))
         self.assertTrue(export.contenu.rstrip().endswith(b"%%EOF"))
+
+    def test_nom_fichier_pdf_suit_format_officiel(self):
+        nom_fichier = nom_fichier_pdf_officiel(date(2026, 6, 8))
+
+        self.assertEqual(nom_fichier, "TIME_TABLE_ENSPM_INFOTEL_DU_08_AU_13_JUIN_2026.pdf")
 
     def test_vue_export_pdf_cd_retourne_piece_jointe(self):
         self.client.force_login(self.cd)
